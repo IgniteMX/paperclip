@@ -20,11 +20,12 @@ fi
 # Always ensure the mounted volume root is owned by node.
 # Railway (and other platforms) mount persistent volumes root-owned, which
 # masks the build-time chown and breaks the app running as the node user.
-# Non-recursive chown of the mount point is cheap and lets node create
-# subdirectories; a deeper fix-up is applied only when ownership is wrong.
+# Always chown recursively to fix stale root-owned files (e.g. .env created
+# during root-run debugging).
 chown node:node /paperclip || true
-if [ "$(stat -c '%U' /paperclip/instances 2>/dev/null)" != "node" ] && [ -d /paperclip/instances ]; then
-chown -R node:node /paperclip/instances || true
+if [ -d /paperclip/instances ]; then
+    chown -R node:node /paperclip/instances || true
+    chmod -R u+rwX /paperclip/instances || true
 fi
 
 exec gosu node "$@"
